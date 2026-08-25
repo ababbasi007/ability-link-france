@@ -40,10 +40,12 @@ class ConsultCallService extends ChangeNotifier {
 
   bool connecting = false;
   bool peerConnected = false;
+  bool reconnecting = false;
   bool micOn = true;
   bool cameraOn = true;
   bool speakerOn = true;
   bool _closed = false;
+  bool _renderersReady = false;
   String? error;
 
   bool get hasLocal => localRenderer.srcObject != null;
@@ -54,6 +56,33 @@ class ConsultCallService extends ChangeNotifier {
 
   DocumentReference<Map<String, dynamic>> _session(String id) =>
       _room(id).doc('session');
+
+  /// Acquires the camera/mic and shows a local preview without starting
+  /// signaling yet — lets the UI offer a device-check step before the other
+  /// party is waiting on the call.
+  Future<void> preview({required bool video}) async {
+    cameraOn = video;
+    error = null;
+    notifyListeners();
+    try {
+      if (!_renderersReady) {
+        await localRenderer.initialize();
+        await remoteRenderer.initialize();
+        _renderersReady = true;
+      }
+      _local ??= await navigator.mediaDevices.getUserMedia({
+        'audio': true,
+        'video': video
+            ? {'facingMode': 'user', 'width': 640, 'height': 480}
+            : false,
+      });
+      localRenderer.srcObject = _local;
+      notifyListeners();
+    } catch (e) {
+      error = 'Could not access camera/microphone. $e';
+      notifyListeners();
+    }
+  }
 
   Future<void> join({
     required CareAppointment appointment,
@@ -79,10 +108,13 @@ class ConsultCallService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await localRenderer.initialize();
-      await remoteRenderer.initialize();
+      if (!_renderersReady) {
+        await localRenderer.initialize();
+        await remoteRenderer.initialize();
+        _renderersReady = true;
+      }
 
-      _local = await navigator.mediaDevices.getUserMedia({
+      _local ??= await navigator.mediaDevices.getUserMedia({
         'audio': true,
         'video': video
             ? {'facingMode': 'user', 'width': 640, 'height': 480}
@@ -105,11 +137,38 @@ class ConsultCallService extends ChangeNotifier {
       };
 
       _pc!.onIceConnectionState = (state) {
-        if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
-            state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
-          peerConnected = true;
-          connecting = false;
-          notifyListeners();
+        switch (state) {
+          case RTCIceConnectionState.RTCIceConnectionStateConnected:
+          case RTCIceConnectionState.RTCIceConnectionStateCompleted:
+            peerConnected = true;
+            connecting = false;
+            reconnecting = false;
+            error = null;
+            notifyListeners();
+            break;
+          case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+            // Often transient (a brief network hiccup) — WebRTC frequently
+            // recovers on its own within a few seconds, so just flag it
+            // rather than tearing anything down.
+            if (peerConnected) {
+              reconnecting = true;
+              notifyListeners();
+            }
+            break;
+          case RTCIceConnectionState.RTCIceConnectionStateFailed:
+          case RTCIceConnectionState.RTCIceConnectionStateClosed:
+            // Unrecoverable at the ICE layer without a full renegotiation.
+            // Skip this if we're already tearing down via hangup().
+            if (_closed) break;
+            peerConnected = false;
+            reconnecting = false;
+            connecting = false;
+            error = 'Connection lost. The call may have dropped.';
+            remoteRenderer.srcObject = null;
+            notifyListeners();
+            break;
+          default:
+            break;
         }
       };
 
@@ -277,7 +336,9 @@ class ConsultCallService extends ChangeNotifier {
       await localRenderer.dispose();
       await remoteRenderer.dispose();
     } catch (_) {}
+    _renderersReady = false;
     peerConnected = false;
     connecting = false;
+    reconnecting = false;
   }
 }

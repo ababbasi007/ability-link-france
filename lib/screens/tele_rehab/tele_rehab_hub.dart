@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
+import '../../widgets/decoded_network_image.dart';
 
 const _forest = AppColors.primary;
 const _ink = Color(0xFF0F3D2E);
@@ -621,20 +622,40 @@ class _ExercisesRow extends StatelessWidget {
                   // figure illustration (left)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      item.image,
-                      width: 56,
-                      height: 82,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      errorBuilder: (_, _, _) => Container(
-                        width: 56,
-                        height: 82,
-                        color: AppColors.primaryLight,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.fitness_center_rounded, color: _forest),
-                      ),
-                    ),
+                    child: item.image.startsWith('http')
+                        ? DecodedNetworkImage(
+                            item.image,
+                            width: 56,
+                            height: 82,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Container(
+                              width: 56,
+                              height: 82,
+                              color: AppColors.primaryLight,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.fitness_center_rounded,
+                                color: _forest,
+                              ),
+                            ),
+                          )
+                        : Image.asset(
+                            item.image,
+                            width: 56,
+                            height: 82,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, _, _) => Container(
+                              width: 56,
+                              height: 82,
+                              color: AppColors.primaryLight,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.fitness_center_rounded,
+                                color: _forest,
+                              ),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 8),
                   // title + meta + play (right)

@@ -43,6 +43,8 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
   bool _muted = false;
   bool _speakerOn = true;
   bool _showChat = false;
+  bool _precheckDone = false;
+  bool _precheckMuted = false;
   String? _sharePath;
   RehabExercise? _demo;
   DateTime? _started;
@@ -67,6 +69,9 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
     super.initState();
     _joinCode = appointment.joinCode;
     _showChat = isChat;
+    // Chat-only visits have no devices to check — everything else gets a
+    // camera/mic precheck before the other person is left waiting.
+    _precheckDone = isChat;
     _started = DateTime.now();
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || _started == null) return;
@@ -78,8 +83,20 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
       CaptionBus.set(
         '${AppCopy.t(prefs, 'captionsSession')}: ${appointment.providerName}',
       );
-      _prepare();
+      if (isChat) {
+        _prepare();
+      } else {
+        _call.preview(video: isVideo);
+      }
     });
+  }
+
+  Future<void> _joinNow() async {
+    if (_precheckMuted) {
+      await _call.setMic(false);
+    }
+    setState(() => _precheckDone = true);
+    await _prepare();
   }
 
   Future<void> _prepare() async {
@@ -237,6 +254,8 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_precheckDone) return _precheckView();
+
     final peerName = isPatient
         ? appointment.providerName
         : (appointment.patientName.isEmpty
@@ -315,6 +334,13 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
                       right: 12,
                       top: 12,
                       child: _shareBanner(),
+                    ),
+                  if (_call.reconnecting)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 12,
+                      child: _reconnectingBanner(),
                     ),
                   if (isVideo) Positioned(right: 12, bottom: 12, child: _pip()),
                 ],
@@ -396,6 +422,140 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
                     ),
                   _ctl(Icons.call_end_rounded, 'End', _end, danger: true),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _precheckView() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF111827),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Cancel',
+                    onPressed: () => Navigator.maybePop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Check your camera & mic',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.black,
+                  width: double.infinity,
+                  child: _call.error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              _call.error!,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      : (isVideo && _call.hasLocal)
+                      ? RTCVideoView(
+                          _call.localRenderer,
+                          mirror: true,
+                          objectFit:
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                        )
+                      : Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _call.hasLocal
+                                    ? 'Microphone ready'
+                                    : 'Requesting camera & microphone access…',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _ctl(
+                    _precheckMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                    _precheckMuted ? 'Unmute' : 'Mute',
+                    () => setState(() => _precheckMuted = !_precheckMuted),
+                    active: !_precheckMuted,
+                  ),
+                  if (isVideo)
+                    _ctl(
+                      _call.cameraOn
+                          ? Icons.videocam_rounded
+                          : Icons.videocam_off_rounded,
+                      'Camera',
+                      _toggleCamera,
+                      active: _call.cameraOn,
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _call.hasLocal || _call.error != null
+                      ? _joinNow
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    _call.error != null ? 'Join anyway' : 'Join session',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -537,6 +697,38 @@ class _SessionRoomScreenState extends State<SessionRoomScreen> {
               ? 'Waiting for the clinician to join…'
               : 'Waiting for clinician · code $_joinCode',
           style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _reconnectingBanner() {
+    return Material(
+      color: const Color(0xCC7A4A00),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Reconnecting…',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
     );

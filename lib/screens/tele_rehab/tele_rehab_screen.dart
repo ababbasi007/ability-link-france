@@ -34,39 +34,6 @@ class _TeleRehabScreenState extends State<TeleRehabScreen> {
   // second one against the same collection.
   late final Stream<int> _unread = NotificationService().watchUnreadCount();
 
-  static const _hubPlan = [
-    RehabHubPlanItem(
-      title: 'Lower Back Stretch',
-      minutes: 10,
-      done: true,
-      image: 'assets/images/rehab/ex_seated_row.png',
-    ),
-    RehabHubPlanItem(
-      title: 'Core Strengthening',
-      minutes: 15,
-      done: true,
-      image: 'assets/images/rehab/ex_seated_row.png',
-    ),
-    RehabHubPlanItem(
-      title: 'Balance Training',
-      minutes: 10,
-      done: true,
-      image: 'assets/images/rehab/ex_leg_extensions.png',
-    ),
-    RehabHubPlanItem(
-      title: 'Leg Mobility Exercise',
-      minutes: 10,
-      done: true,
-      image: 'assets/images/rehab/ex_leg_extensions.png',
-    ),
-    RehabHubPlanItem(
-      title: 'Breathing Exercise',
-      minutes: 5,
-      done: false,
-      image: 'assets/images/rehab/ex_breathing.png',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -157,49 +124,64 @@ class _TeleRehabScreenState extends State<TeleRehabScreen> {
                                 false)
                             ? profileSnap.data!.firstName
                             : 'Alex';
-                        return RehabHubView(
-                          name: name,
-                          unreadBadge: unread > 0
-                              ? (unread > 9 ? '9+' : '$unread')
-                              : '3',
-                          therapistName:
-                              next?.providerName ?? 'Dr. Sarah Johnson',
-                          whenLabel: next?.whenLabel ?? 'Today, 10:00 AM',
-                          durationMin: next?.durationMin ?? 30,
-                          photoAsset: 'assets/images/rehab/therapist_sarah.png',
-                          plan: _hubPlan,
-                          onBack: () => Navigator.of(context).maybePop(),
-                          onBell: () =>
-                              _push(const NotificationsInboxScreen()),
-                          onCalendar: _openSessions,
-                          onVideo: () => _join(next),
-                          onPlans: () =>
-                              _push(const PersonalizedPlanScreen()),
-                          onProgress: () =>
-                              _push(const RehabProgressScreen()),
-                          onHealth: () => _push(const RehabHealthScreen()),
-                          onMessages: () => _openChat(next),
-                          onLibrary: () =>
-                              _push(const ExerciseLibraryScreen()),
-                          onJoin: () => _join(next),
-                          onReschedule: _openTherapists,
-                          onMore: _openSessions,
-                          onPlanItem: (i) {
-                            final title = _hubPlan[i].title;
-                            RehabExercise? match;
-                            for (final e in exercises) {
-                              if (e.title == title) {
-                                match = e;
-                                break;
-                              }
-                            }
-                            if (match != null) {
-                              _push(ExerciseDetailScreen(exercise: match));
-                            } else {
-                              _push(const PersonalizedPlanScreen());
-                            }
+                        return StreamBuilder<Map<String, RehabPlanItem>>(
+                          stream: _rehab.watchPlan(),
+                          builder: (context, planSnap) {
+                            final plan = planSnap.data ?? const {};
+                            // Today's real assigned exercises, joined from the
+                            // plan status map — falls back to the hub's own
+                            // demo illustrations when nothing is assigned yet.
+                            final today = [
+                              for (final e in exercises)
+                                if (plan.containsKey(e.id)) e,
+                            ];
+                            final hubPlan = [
+                              for (final e in today)
+                                RehabHubPlanItem(
+                                  title: e.title,
+                                  minutes: e.minutes,
+                                  done: plan[e.id]!.status == 'done',
+                                  image: e.imageUrl,
+                                ),
+                            ];
+                            return RehabHubView(
+                              name: name,
+                              unreadBadge: unread > 0
+                                  ? (unread > 9 ? '9+' : '$unread')
+                                  : '3',
+                              therapistName:
+                                  next?.providerName ?? 'Dr. Sarah Johnson',
+                              whenLabel: next?.whenLabel ?? 'Today, 10:00 AM',
+                              durationMin: next?.durationMin ?? 30,
+                              photoAsset:
+                                  'assets/images/rehab/therapist_sarah.png',
+                              plan: hubPlan,
+                              onBack: () => Navigator.of(context).maybePop(),
+                              onBell: () =>
+                                  _push(const NotificationsInboxScreen()),
+                              onCalendar: _openSessions,
+                              onVideo: () => _join(next),
+                              onPlans: () =>
+                                  _push(const PersonalizedPlanScreen()),
+                              onProgress: () =>
+                                  _push(const RehabProgressScreen()),
+                              onHealth: () => _push(const RehabHealthScreen()),
+                              onMessages: () => _openChat(next),
+                              onLibrary: () =>
+                                  _push(const ExerciseLibraryScreen()),
+                              onJoin: () => _join(next),
+                              onReschedule: _openTherapists,
+                              onMore: _openSessions,
+                              onPlanItem: (i) {
+                                if (i < 0 || i >= today.length) {
+                                  _push(const PersonalizedPlanScreen());
+                                  return;
+                                }
+                                _push(ExerciseDetailScreen(exercise: today[i]));
+                              },
+                              onAskAi: () => _push(const AiAssistantScreen()),
+                            );
                           },
-                          onAskAi: () => _push(const AiAssistantScreen()),
                         );
                       },
                     );
