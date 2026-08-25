@@ -1,0 +1,61 @@
+name: ability_link
+description: "Ability Link — global accessibility platform."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
+  google_sign_in: ^7.2.0
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
+  geolocator: ^14.0.3
+  firebase_ai: ^3.15.0
+  flutter_tts: ^4.2.5
+  speech_to_text: ^7.4.0
+  image_picker: ^1.2.3
+  qr_flutter: ^4.1.0
+  camera: ^0.12.0+2
+  firebase_storage: ^13.0.0
+  flutter_webrtc: ^1.2.0
+  file_picker: ^12.0.0
+  url_launcher: ^6.3.2
+  local_auth: ^3.0.0
+  crypto: ^3.0.7
+  firebase_messaging: ^16.5.0
+  path_provider: ^2.1.6
+  # 3.1.x requires AGP 9 / Kotlin plugin on the library module and fails
+  # assembleDebug with this project's AGP 8.11.1 toolchain.
+  add_2_calendar: 3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.6
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/ability_link_logo_a.png
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/ability_link_logo_a.png
+  fullscreen: true
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/home_icons/
+    - assets/images/rehab/
+    - assets/images/empty_states/

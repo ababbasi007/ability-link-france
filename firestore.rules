@@ -1,0 +1,1008 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/platformConfig/settings)
+        && request.auth.uid in get(/databases/$(database)/documents/platformConfig/settings).data.adminUids;
+    }
+
+    function isModerator() {
+      return isAdmin() || (
+        isSignedIn()
+        && exists(/databases/$(database)/documents/platformConfig/settings)
+        && request.auth.uid in get(/databases/$(database)/documents/platformConfig/settings).data.moderatorUids
+      );
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isHealthOrgOwner(orgId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/healthOrgs/$(orgId))
+        && get(/databases/$(database)/documents/healthOrgs/$(orgId)).data.ownerUid
+          == request.auth.uid;
+    }
+
+    function isEmployerOwner(employerId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/employers/$(employerId))
+        && get(/databases/$(database)/documents/employers/$(employerId)).data.ownerUid
+          == request.auth.uid;
+    }
+
+    function isProviderOwner(providerId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/providers/$(providerId))
+        && get(/databases/$(database)/documents/providers/$(providerId)).data.ownerUid
+          == request.auth.uid;
+    }
+
+    // Client-side demo seeding still has to write these docs, but only into
+    // the well-known ids. Anyone can no longer dump a fake hospital or job.
+    function isSeedWrite() {
+      return isSignedIn() && request.resource.data.seeded == true;
+    }
+
+    function isSeedPlaceId(id) {
+      return id in [
+        'city-hospital', 'green-cafe', 'central-library', 'grand-mall',
+        'metro-hub', 'riverside-park', 'quiet-studio', 'community-sign-center'
+      ];
+    }
+
+    function isSeedProviderId(id) {
+      return id in [
+        'dr-sara-ahmed', 'pt-james-okonkwo', 'dr-lena-cho', 'ot-maya-singh',
+        'slp-nora-elias', 'dr-amir-hassan', 'dr-nina-park', 'dr-eli-brooks',
+        'dr-sofia-ramos', 'edu-omar-hassan', 'care-priya-nair',
+        'assist-lena-park', 'assist-noah-wright', 'assist-sofia-reyes',
+        'care-marcus-lee', 'assist-jordan-kim', 'assist-maya-chen',
+        'assist-omar-diallo', 'assist-helen-brooks', 'care-amina-hassan'
+      ];
+    }
+
+    function isSeedEmployerId(id) {
+      return id in [
+        'openpath-labs', 'city-access-health', 'northline-transit',
+        'bright-leaf-edu'
+      ];
+    }
+
+    function isSeedJobId(id) {
+      return id in [
+        'job-access-pm', 'job-support-coord', 'job-customer-ops',
+        'job-content-access', 'job-data-intern', 'job-clinic-ot-liaison'
+      ];
+    }
+
+    function appointmentData(appointmentId) {
+      return get(/databases/$(database)/documents/appointments/$(appointmentId)).data;
+    }
+
+    // Patient, the clinician who owns the provider listing, or the health org
+    // that scheduled the visit.
+    function isAppointmentParty(appointmentId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/appointments/$(appointmentId))
+        && (
+          appointmentData(appointmentId).uid == request.auth.uid
+          || isProviderOwner(appointmentData(appointmentId).providerId)
+          || (
+            appointmentData(appointmentId).orgId is string
+            && isHealthOrgOwner(appointmentData(appointmentId).orgId)
+          )
+        );
+    }
+
+    // A clinician who joined from another device by entering the visit code
+    // registers a guest doc first; see isValidJoinCodeFor below.
+    function isRoomGuest(roomId) {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/consultRooms/$(roomId)/guests/$(request.auth.uid)
+        );
+    }
+
+    function canJoinRoom(roomId) {
+      return isAppointmentParty(roomId) || isRoomGuest(roomId);
+    }
+
+    function isValidJoinCodeFor(roomId, code) {
+      return code is string
+        && exists(/databases/$(database)/documents/consultJoinCodes/$(code))
+        && get(/databases/$(database)/documents/consultJoinCodes/$(code))
+          .data.appointmentId == roomId;
+    }
+
+    function ownsDoc(collection, docId) {
+      return docId is string
+        && docId != ''
+        && exists(/databases/$(database)/documents/$(collection)/$(docId))
+        && get(/databases/$(database)/documents/$(collection)/$(docId)).data.uid
+          == request.auth.uid;
+    }
+
+    function isThreadMember(threadId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/sessionChats/$(threadId))
+        && request.auth.uid in
+          get(/databases/$(database)/documents/sessionChats/$(threadId)).data.participants;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isModerator();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || (
+        isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['accountStatus', 'fraudScore', 'fraudNotes', 'platformRole', 'updatedAt'])
+      );
+      allow delete: if isOwner(userId);
+
+      match /favorites/{placeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admins are seeded out of band (Firebase console / CI). Letting the client
+    // create this doc made whoever opened the admin screen first a platform admin.
+    match /platformConfig/{docId} {
+      allow read: if true;
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /doctors/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Ability Map places — public read; only seed ids or moderators may add.
+    match /places/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || (
+        isSeedWrite() && isSeedPlaceId(docId)
+      );
+      allow update: if isModerator() || (
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['features', 'needs', 'photoUrls', 'imageUrl', 'description', 'catalogVersion',
+                    'governmentCertified', 'inspectionDate'])
+      );
+      allow delete: if false;
+    }
+
+    match /audits/{docId} {
+      allow read: if resource.data.status == 'submitted' || (
+        isSignedIn() && resource.data.uid == request.auth.uid
+      ) || isModerator();
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.seeded == true &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid.matches('seed-.*')
+        )
+      );
+      allow update: if isSignedIn() &&
+        resource.data.uid == request.auth.uid &&
+        request.resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /placeReports/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.details is string
+        && request.resource.data.category is string
+        && request.resource.data.type is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid || isModerator()
+      );
+      allow update: if isModerator()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    // Anonymous busy-hour hints for the map. Merge-only counters.
+    match /placeVisitStats/{placeId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['hours', 'weekday', 'totalVisits', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Category search analytics used by the impact dashboard.
+    match /searchEvents/{docId} {
+      allow create: if request.resource.data.query is string
+        && request.resource.data.category is string
+        && (
+          request.resource.data.uid == ''
+          || (isSignedIn() && request.resource.data.uid == request.auth.uid)
+        );
+      allow read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Place-linked Q&A. Anyone signed in can ask; anyone can answer (de-facto
+    // moderated by flagging). Moderators can delete.
+    match /placeQna/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.question is string
+        && request.resource.data.targetId is string
+        && request.resource.data.targetType is string;
+      // Answer (adding answerBody/answerUid/answeredAt) or moderator edits.
+      allow update: if isSignedIn() && (
+        (
+          // Any signed-in user can post / update an answer on an unanswered Q.
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['answerUid', 'answerBody', 'answeredAt', 'updatedAt'])
+        ) || isModerator()
+      );
+      allow delete: if isModerator();
+    }
+
+    // Provider marketplace. A clinician may register their own listing;
+    // they cannot mark it verified, and they cannot invent seed ids.
+    match /providers/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || (
+        isSeedWrite() && isSeedProviderId(docId)
+      ) || (
+        isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.verified != true
+        && !isSeedProviderId(docId)
+      );
+      allow update: if isSignedIn() && (
+        (
+          resource.data.ownerUid == request.auth.uid &&
+          request.resource.data.ownerUid == resource.data.ownerUid
+        ) ||
+        (
+          isModerator() &&
+          request.resource.data.ownerUid == resource.data.ownerUid
+        )
+      );
+      allow delete: if false;
+    }
+
+    // Booking / enquiry leads
+    match /enquiries/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isProviderOwner(resource.data.providerId)
+      );
+      allow update: if isSignedIn()
+        && isProviderOwner(resource.data.providerId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    // Appointments + referrals
+    match /appointments/{docId} {
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.orgId is string &&
+          isHealthOrgOwner(request.resource.data.orgId)
+        )
+      );
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isProviderOwner(resource.data.providerId) ||
+        (
+          resource.data.orgId is string &&
+          isHealthOrgOwner(resource.data.orgId)
+        )
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        (
+          isProviderOwner(resource.data.providerId) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status'])
+        ) ||
+        (
+          resource.data.orgId is string &&
+          isHealthOrgOwner(resource.data.orgId) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status'])
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /assistanceBookings/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isProviderOwner(resource.data.providerId) ||
+        isModerator()
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isModerator()
+      );
+      allow delete: if false;
+    }
+
+    match /assistantReports/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid || isModerator()
+      );
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    // Live video/audio signaling. Room id is the appointment id.
+    match /consultRooms/{roomId} {
+      allow read, write: if canJoinRoom(roomId);
+
+      // Registers a code-holding clinician as a room participant.
+      match /guests/{guestUid} {
+        allow read: if isSignedIn()
+          && (guestUid == request.auth.uid || isAppointmentParty(roomId));
+        allow create: if isSignedIn()
+          && guestUid == request.auth.uid
+          && isValidJoinCodeFor(roomId, request.resource.data.code);
+        allow update, delete: if false;
+      }
+
+      match /call/{document=**} {
+        allow read, write: if canJoinRoom(roomId);
+      }
+    }
+
+    match /consultJoinCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.appointmentId is string;
+      allow update, delete: if false;
+    }
+
+    match /referrals/{docId} {
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.orgId is string &&
+          isHealthOrgOwner(request.resource.data.orgId)
+        )
+      );
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        (
+          resource.data.orgId is string &&
+          isHealthOrgOwner(resource.data.orgId)
+        )
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        (
+          resource.data.orgId is string &&
+          isHealthOrgOwner(resource.data.orgId)
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /healthOrgs/{orgId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if false;
+
+      match /staff/{providerId} {
+        allow read: if true;
+        allow create, update, delete: if isHealthOrgOwner(orgId);
+      }
+    }
+
+    match /patientConsents/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.consent == true;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isHealthOrgOwner(resource.data.orgId)
+      );
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      allow delete: if false;
+    }
+    match /jobs/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || (
+        isSeedWrite() && isSeedJobId(docId)
+      ) || (
+        isSignedIn()
+        && request.resource.data.employerId is string
+        && isEmployerOwner(request.resource.data.employerId)
+        && !isSeedJobId(docId)
+      );
+      allow update: if isSignedIn() && isEmployerOwner(resource.data.employerId);
+      allow delete: if false;
+    }
+
+    match /employers/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || (
+        isSeedWrite() && isSeedEmployerId(docId)
+      ) || (
+        isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.verified != true
+        && !isSeedEmployerId(docId)
+      );
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if false;
+    }
+
+    match /jobApplications/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isEmployerOwner(resource.data.employerId)
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        (
+          isEmployerOwner(resource.data.employerId) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'accommodationStatus', 'updatedAt'])
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /educationPrograms/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    match /educationInstitutions/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    match /benefitSchemes/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    match /governmentOffices/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    match /benefitApplications/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /educationInterests/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /transportOptions/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update, delete: if false;
+    }
+
+    match /barrierAlerts/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.seeded == true &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid.matches('seed-.*')
+        )
+      );
+      // Only the reporter or a moderator may resolve an alert — a false "resolved"
+      // sends someone to a place that is still inaccessible.
+      allow update: if isSignedIn()
+        && (resource.data.uid == request.auth.uid || isModerator())
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /travelDestinations/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update: if isModerator();
+      allow delete: if false;
+    }
+
+    match /travelItineraries/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /travelBookings/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /passportShares/{docId} {
+      // Snapshots carry conditions, allergies and emergency contacts, so a share
+      // code is not on its own enough to read one.
+      allow read: if isSignedIn() && (
+        resource.data.ownerUid == request.auth.uid
+        || (
+          resource.data.status == 'active'
+          && (
+            !('expiresAt' in resource.data)
+            || resource.data.expiresAt > request.time
+          )
+        )
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.consent == true;
+      allow update: if isSignedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        (
+          resource.data.status == 'active' &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['accessCount', 'lastAccessAt', 'lastViewer'])
+        )
+      );
+      allow delete: if false;
+    }
+
+    // Access logs are written by the viewer but belong to the passport owner, so
+    // ownerUid must match the share that was actually opened.
+    match /passportAccessLogs/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.viewerUid == request.auth.uid
+        && request.resource.data.shareId is string
+        && exists(
+          /databases/$(database)/documents/passportShares/$(request.resource.data.shareId)
+        )
+        && get(
+          /databases/$(database)/documents/passportShares/$(request.resource.data.shareId)
+        ).data.ownerUid == request.resource.data.ownerUid;
+      allow read: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /sosAlerts/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        (resource.data.notifiedUids is list &&
+          request.auth.uid in resource.data.notifiedUids)
+      );
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /locationShares/{docId} {
+      allow read: if resource.data.status == 'active'
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /emergencyResources/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update, delete: if false;
+    }
+
+    match /communityPosts/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.seeded == true &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid.matches('seed-.*')
+        )
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['flagCount', 'status']) ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['pollCounts', 'voterUids']) ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['replyCount']) ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['likedBy', 'likeCount'])
+      );
+      allow delete: if false;
+
+      match /replies/{replyId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /communityGroups/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn()
+        && (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['memberUids', 'memberCount']) ||
+          resource.data.createdBy == request.auth.uid
+        );
+      allow delete: if false;
+    }
+
+    match /communityEvents/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.seeded == true &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid.matches('seed-.*')
+        )
+      );
+      allow update: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['rsvpUids', 'rsvpCount'])
+      );
+      allow delete: if false;
+    }
+
+    match /reviews/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.seeded == true &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid.matches('seed-.*')
+        )
+      );
+      allow update: if isSignedIn() && (
+        (
+          // Community review author can only edit moderation fields.
+          resource.data.uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['flagCount', 'status'])
+        ) ||
+        (
+          // Anyone can mark a community review as helpful (add-once).
+          resource.data.uid != request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['helpfulCount', 'helpfulBy', 'updatedAt'])
+          && resource.data.helpfulBy is list
+          && request.resource.data.helpfulBy is list
+          && resource.data.helpfulCount is int
+          && request.resource.data.helpfulCount is int
+          && request.resource.data.helpfulCount == resource.data.helpfulCount + 1
+          && !(request.auth.uid in resource.data.helpfulBy)
+          && request.auth.uid in request.resource.data.helpfulBy
+          && request.resource.data.helpfulBy.hasAll(resource.data.helpfulBy)
+        ) ||
+        (
+          // Provider owners can reply to provider reviews.
+          resource.data.targetType == 'provider'
+          && isProviderOwner(resource.data.targetId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'ownerReply',
+              'ownerReplyUid',
+              'ownerRepliedAt',
+              'updatedAt'
+            ])
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /billingPlans/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update, delete: if false;
+    }
+
+    match /subscriptions/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if false;
+    }
+
+    match /invoices/{docId} {
+      // Platform fees are billed to a provider by the client that generated the
+      // lead, so the payer is another user. The creator has to identify itself and
+      // own the enquiry/booking the fee is derived from.
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.amountCents is int &&
+          request.resource.data.amountCents > 0 &&
+          request.resource.data.amountCents <= 9900 &&
+          (
+            (
+              request.resource.data.type == 'lead_fee' &&
+              ownsDoc('enquiries', request.resource.data.relatedId)
+            ) || (
+              request.resource.data.type == 'commission' && (
+                ownsDoc('appointments', request.resource.data.relatedId) ||
+                ownsDoc('assistanceBookings', request.resource.data.relatedId)
+              )
+            )
+          )
+        )
+      );
+      allow read: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if false;
+    }
+
+    match /rehabExercises/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update, delete: if false;
+    }
+
+    match /rehabPrograms/{docId} {
+      allow read: if true;
+      allow create: if isModerator() || isSeedWrite();
+      allow update, delete: if false;
+    }
+
+    // Clinical chat. Membership lives on the thread doc; without it every signed-in
+    // user could read every conversation.
+    match /sessionChats/{threadId} {
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn()
+        && request.resource.data.participants is list
+        && request.auth.uid in request.resource.data.participants;
+      // A clinician who joined a visit adds themselves to that visit's thread.
+      // No client may drop a participant, so nobody can lock the patient out of
+      // their own conversation.
+      allow update: if isSignedIn()
+        && request.resource.data.participants.hasAll(resource.data.participants)
+        && (
+          request.auth.uid in resource.data.participants ||
+          (
+            resource.data.appointmentId is string &&
+            resource.data.appointmentId != '' &&
+            canJoinRoom(resource.data.appointmentId) &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['participants', 'updatedAt']) &&
+            request.auth.uid in request.resource.data.participants
+          )
+        );
+      allow delete: if false;
+
+      match /messages/{msgId} {
+        allow read: if isThreadMember(threadId);
+        allow create: if isThreadMember(threadId)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.body is string;
+        allow update, delete: if false;
+      }
+    }
+
+    match /notifications/{docId} {
+      // Bookings and chat legitimately notify the other party, so cross-user writes
+      // stay allowed — but they must be attributable and cannot arrive pre-read.
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid ||
+        (
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.uid is string &&
+          request.resource.data.uid != '' &&
+          request.resource.data.read == false &&
+          request.resource.data.type in [
+            'booking', 'payment', 'message', 'appointment', 'telehealth',
+            'rehab', 'caregiver', 'sos'
+          ]
+        )
+      );
+      allow read: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['read', 'readAt']);
+      allow delete: if false;
+    }
+
+    match /impactSnapshots/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.places is int
+        && request.resource.data.providers is int
+        && request.resource.data.reviews is int;
+      allow delete: if false;
+    }
+
+    match /impactReports/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.body is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        resource.data.shared == true
+      );
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['shared']);
+      allow delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /integrations/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    match /openData/{docId} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && request.resource.data.kind is string
+        && request.resource.data.json is string;
+      allow delete: if false;
+    }
+
+    match /apiKeys/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.prefix is string
+        && request.resource.data.tokenHash is string;
+      allow read: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['revoked', 'lastUsedAt']);
+      allow delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /markets/{docId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    match /expansionPartners/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string;
+      allow read: if isSignedIn();
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if false;
+    }
+
+    match /trustPolicy/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    match /aiOversight/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.reply is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid || isModerator()
+      );
+      allow update: if isModerator()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'reviewerUid', 'reviewedAt']);
+      allow delete: if false;
+    }
+
+    match /fraudReports/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.reason is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid || isModerator()
+      );
+      allow update: if isModerator()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    match /verificationRequests/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.targetId is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid || isModerator()
+      );
+      allow update: if isModerator()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

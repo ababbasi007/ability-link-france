@@ -1,0 +1,467 @@
+
+
+===== PAGE 1 =====
+ABILITY LINK 
+Complete Product Feature Specification 
+Master feature inventory for product development, MVP planning, investor/accelerator applications, and future 
+roadmap 
+Product vision 
+Ability Link is an AI-powered accessibility infrastructure platform connecting people with disabilities to accessible 
+healthcare, rehabilitation, employment, education, transport, travel and everyday services, while giving 
+organizations tools to improve, verify and manage accessibility. 
+1. User & Accessibility Profile 
+ Account registration and secure login 
+ Personal profile and optional disability/accessibility information 
+ Accessibility needs profile: mobility, vision, hearing, cognitive, communication and other needs 
+ Preferred language and communication method 
+ Mobility-aid profile (wheelchair, walker, cane, etc.) 
+ Accessibility Passport: portable profile of a user's accessibility requirements and preferences 
+ Privacy controls for each accessibility attribute 
+ Share Passport selectively with providers, employers or caregivers 
+ Emergency contacts and important assistance preferences 
+ Caregiver/family linked profiles and permissions 
+ Profile verification options where appropriate 
+ Profile completeness and accessibility-needs checklist 
+2. AI Accessibility Assistant 
+ Natural-language accessibility assistant 
+ Personalized recommendations based on the user's Accessibility Passport 
+ Accessible service discovery 
+ Accessibility Q&A 
+ AI comparison of providers and places 
+ AI-generated accessibility summaries 
+ AI trip and appointment planning 
+ AI explanation of accessibility information in plain language 
+ Voice input and voice responses 
+ Multilingual assistance 
+ Context-aware follow-up questions 
+ AI-powered provider matching 
+ AI-powered accessibility requirement extraction from user requests 
+ AI safety guardrails and confidence/verification indicators 
+3. Ability Map 
+ Interactive accessibility map 
+ Accessible places and services 
+
+===== PAGE 2 =====
+ Accessibility ratings and confidence scores 
+ Filters by disability/accessibility requirement 
+ Accessible entrances, ramps, lifts/elevators, toilets and parking 
+ Accessible public transport points 
+ Healthcare and rehabilitation locations 
+ Employment and education locations 
+ Accessible hotels, restaurants, shopping and attractions 
+ Barrier/obstacle reports 
+ Photos and accessibility evidence 
+ Community-generated accessibility information 
+ Verified provider/organization markers 
+ Save/favorite locations 
+ Location sharing 
+ Accessible route planning 
+ Step-free route preference 
+ Turn-by-turn accessibility navigation (future phase) 
+4. Accessibility Discovery & Search 
+ Global search for services, places and organizations 
+ Search by category, location and accessibility need 
+ Advanced accessibility filters 
+ Distance and travel-time filters 
+ Open-now/availability filters 
+ Verified-only filter 
+ Accessibility score sorting 
+ Personalized AI ranking 
+ Provider comparison 
+ Saved searches 
+ Recent searches 
+ Recommendations based on previous activity 
+5. Healthcare & Rehabilitation 
+ Accessible hospitals and clinics directory 
+ Doctors and specialists 
+ Physiotherapy and rehabilitation centers 
+ Occupational therapy 
+ Speech and language services 
+ Mental/behavioral support directory where appropriate 
+ Assistive technology providers 
+ Accessible diagnostic centers 
+ Accessibility requirements for appointments 
+ Provider accessibility profiles 
+ Appointment/request functionality 
+ Referral and service matching 
+ Reviews and accessibility feedback 
+ Emergency-care information (informational, not a replacement for emergency services) 
+
+===== PAGE 3 =====
+6. Employment & Career 
+ Disability-inclusive job discovery 
+ Accessible job listings 
+ Job search by accommodation offered 
+ AI job matching 
+ Skills and profile matching 
+ Employer accessibility profiles 
+ Workplace accessibility information 
+ Remote/hybrid job filters 
+ Reasonable-accommodation information 
+ Employer-to-candidate communication 
+ Interview accessibility requirements 
+ Accessible recruitment workflow 
+ Career resources and training opportunities 
+ Employer inclusion dashboard (B2B) 
+7. Education 
+ Accessible schools, colleges and universities 
+ Training centers and vocational programs 
+ Online learning opportunities 
+ Accessibility information for campuses 
+ Accessible course discovery 
+ Student accessibility requirements 
+ Scholarship and support-resource directory 
+ AI education matching 
+ Accessible examination/support information 
+ Education provider profiles 
+8. Transport & Mobility 
+ Accessible public transport discovery 
+ Accessible bus/train/metro information 
+ Accessible taxi and ride services 
+ Wheelchair-accessible vehicle providers 
+ Parking information 
+ Accessible route planning 
+ Barrier alerts 
+ Transport accessibility ratings 
+ Mobility-aid rental/service providers 
+ Travel assistance information 
+ Future integration with transport APIs 
+9. Travel & Tourism 
+ Accessible hotels 
+ Accessible flights/travel information 
+ Accessible attractions 
+ Accessible restaurants and venues 
+
+===== PAGE 4 =====
+ Accessible transport 
+ Destination accessibility profiles 
+ AI accessible-trip planner 
+ Accessibility requirements for accommodation 
+ Verified accessibility evidence 
+ Accessible itinerary generation 
+ Travel companion/caregiver information 
+ Accessibility-focused reviews 
+10. Services Marketplace 
+ Accessible service-provider directory 
+ Categories such as healthcare, home services, transport, education, legal/social support and travel 
+ Provider profiles 
+ Accessibility capabilities 
+ Service areas 
+ Pricing/quote information 
+ Lead generation 
+ Enquiry and messaging 
+ Booking/request workflow 
+ Provider ratings and reviews 
+ Verified provider badge 
+ Accessibility certification/badge (future) 
+ Provider subscription plans 
+ Sponsored listings with clear disclosure 
+11. Community 
+ Community feed 
+ Accessibility experiences 
+ Questions and answers 
+ Tips and recommendations 
+ Local accessibility groups 
+ Peer support 
+ Polls and surveys 
+ Accessibility issue reporting 
+ Community moderation 
+ Report/block tools 
+ Verified organization participation 
+ Expert contributions 
+12. Reviews, Ratings & Verification 
+ Accessibility-specific reviews 
+ Structured accessibility questionnaire 
+ Photo/video evidence 
+ User ratings 
+ Provider responses 
+ Community verification 
+
+===== PAGE 5 =====
+ Organization verification 
+ Data freshness indicators 
+ Confidence score 
+ Conflict/incorrect-information reporting 
+ Moderation workflow 
+ Accessibility audit records (future) 
+13. Accessibility Passport Sharing 
+ Digital Accessibility Passport 
+ QR/share link 
+ Selective information sharing 
+ Temporary access links 
+ Provider access permissions 
+ Employer access permissions 
+ Caregiver access permissions 
+ Consent management 
+ Access history 
+ Revoke access 
+ Data export 
+ Data deletion 
+14. Emergency & Assistance 
+ Emergency contact shortcuts 
+ Accessibility needs available to selected contacts 
+ Location sharing with consent 
+ Find nearby accessible emergency resources 
+ Emergency communication preferences 
+ Safety information 
+ Future SOS workflow with local emergency-service integration where legally/technically supported 
+15. AI-Powered Accessibility Tools 
+ AI accessibility recommendation engine 
+ AI place accessibility summarizer 
+ AI document/website accessibility summarization 
+ AI image-based accessibility analysis (future) 
+ AI OCR and text simplification 
+ Plain-language conversion 
+ Translation 
+ Speech-to-text 
+ Text-to-speech 
+ Personalized interface recommendations 
+ AI route/accessibility reasoning 
+ AI job matching 
+ AI service/provider matching 
+ AI travel planning 
+ AI accessibility checklist generation 
+
+===== PAGE 6 =====
+16. Provider Portal (B2B) 
+ Business/organization registration 
+ Organization profile 
+ Accessibility profile 
+ Service catalog 
+ Locations 
+ Accessibility features checklist 
+ Upload photos/evidence 
+ Manage reviews 
+ Respond to enquiries 
+ Receive leads 
+ Booking/request management 
+ Staff/accessibility information 
+ Accessibility improvement recommendations 
+ Analytics dashboard 
+ Customer feedback 
+ Subscription/billing management 
+17. Employer Accessibility Platform 
+ Employer accessibility profile 
+ Accessible jobs 
+ Candidate matching 
+ Workplace accessibility assessment 
+ Accommodation tracking 
+ Employee Accessibility Passport integration with consent 
+ Accessibility policy resources 
+ Inclusion analytics 
+ Recruitment accessibility tools 
+ Training resources 
+ Accessibility improvement roadmap 
+18. Healthcare/Organization Dashboard 
+ Provider management 
+ Patient/service-user accessibility requirements with consent 
+ Referral management 
+ Service matching 
+ Accessibility data management 
+ Appointment requests 
+ Feedback analytics 
+ Accessibility improvement reports 
+ Organization-level analytics 
+19. Admin & Platform Management 
+ User management 
+ Provider management 
+ Organization verification 
+
+===== PAGE 7 =====
+ Content management 
+ Accessibility taxonomy management 
+ Map/data management 
+ Review moderation 
+ Community moderation 
+ Reports and complaints 
+ Fraud/abuse detection 
+ AI moderation assistance 
+ Analytics 
+ Subscription management 
+ Payments/refunds management 
+ Audit logs 
+ Role-based access control 
+ System configuration 
+20. Payments & Monetization 
+ Provider subscriptions 
+ Business premium profiles 
+ Lead-generation fees 
+ Booking/service commissions where appropriate 
+ Accessibility certification/audit fees 
+ Employer SaaS plans 
+ Healthcare/organization SaaS plans 
+ Government/NGO data and platform contracts 
+ Sponsored placements with transparency 
+ Premium analytics 
+ API/data licensing where legally appropriate 
+ Payment processing 
+ Invoices and receipts 
+21. Accessibility-First UX 
+ WCAG-oriented interface design 
+ Screen-reader support 
+ Keyboard navigation 
+ Adjustable text size 
+ High contrast 
+ Reduced motion 
+ Readable/dyslexia-friendly options 
+ Color-vision considerations 
+ Voice navigation 
+ Captions/transcripts 
+ Alt text 
+ Simple-language mode 
+ Large touch targets 
+ Low cognitive-load mode 
+ Customizable interface preferences 
+ Multi-language UI 
+ Assistive-technology compatibility 
+
+===== PAGE 8 =====
+22. Notifications & Communication 
+ Push notifications 
+ Email notifications 
+ SMS/WhatsApp notifications where supported 
+ New provider/service alerts 
+ Booking/request updates 
+ Accessibility barrier alerts 
+ Saved-search alerts 
+ Price/availability alerts where applicable 
+ Community notifications 
+ Privacy/security notifications 
+ Notification preferences 
+23. Data, Privacy & Trust 
+ Consent management 
+ Privacy-by-design 
+ Data minimization 
+ Encryption in transit and at rest 
+ Role-based access 
+ Access logs 
+ Data export 
+ Account deletion 
+ Data retention controls 
+ Sensitive accessibility-data protection 
+ User-controlled sharing 
+ AI data-use controls 
+ Security monitoring 
+ Terms, privacy and consent records 
+24. Analytics & Impact 
+ User analytics 
+ Provider analytics 
+ Service discovery analytics 
+ Accessibility coverage maps 
+ Accessibility gap analysis 
+ Barrier trends 
+ Provider engagement 
+ Employment outcomes 
+ Service access metrics 
+ Community contribution metrics 
+ AI recommendation performance 
+ Business KPIs 
+ Social-impact KPIs 
+ Country/city accessibility dashboards 
+ Investor/partner reporting 
+
+===== PAGE 9 =====
+25. Integrations & APIs 
+ Maps and geolocation 
+ OpenStreetMap/other mapping providers 
+ Geocoding and routing 
+ Payment gateways 
+ Calendar integrations 
+ Authentication providers 
+ AI/LLM APIs 
+ Translation APIs 
+ Accessibility/transport open-data sources 
+ Healthcare/provider data integrations where legally permitted 
+ Employer/ATS integrations 
+ Hotel/travel APIs 
+ Public-sector/open-data APIs 
+ Developer API platform (future) 
+26. Localization & Global Expansion 
+ Multi-country support 
+ Multi-language support 
+ Country-specific accessibility standards 
+ Country-specific service categories 
+ Local currencies 
+ Local maps and transport data 
+ Local legal/resource information 
+ Country-specific emergency information 
+ Localized accessibility taxonomies 
+ Regional partner portals 
+27. Trust, Safety & Responsible AI 
+ Provider verification 
+ Identity verification where appropriate 
+ Review fraud detection 
+ Scam/spam prevention 
+ AI hallucination controls 
+ Source/citation display for AI-generated factual answers where feasible 
+ Confidence indicators 
+ Human escalation 
+ User reporting 
+ Data-protection controls 
+ Bias monitoring 
+ Accessibility testing with disabled users 
+ AI decision transparency 
+ No automated high-stakes decisions without appropriate human oversight 
+28. Future Platform Features 
+ Indoor accessibility navigation 
+
+===== PAGE 10 =====
+ Computer-vision accessibility detection 
+ AR accessibility guidance 
+ Smartphone camera accessibility analysis 
+ Beacon/IoT integrations 
+ Smart building integrations 
+ Digital accessibility certification 
+ Accessibility compliance assessment tools 
+ Government accessibility dashboards 
+ City accessibility intelligence 
+ Accessibility API for third-party developers 
+ White-label Ability Link platform 
+ Enterprise accessibility management suite 
+ AI accessibility copilot for organizations 
+29. Recommended MVP (September 2026) 
+ User registration and Accessibility Passport 
+ AI Accessibility Assistant 
+ Ability Map 
+ Accessible-place/service search 
+ Accessibility filters 
+ Provider registration and profiles 
+ Accessibility information and verification 
+ Basic AI matching 
+ Reviews/feedback 
+ Basic admin dashboard 
+ Core accessibility-first UI 
+ Analytics sufficient to measure pilot traction 
+30. Recommended Phase 2 
+ Employment marketplace and employer dashboard 
+ Healthcare/referral workflows 
+ Accessible travel planning 
+ Transport integrations 
+ Community features 
+ Provider subscriptions and payments 
+ Advanced accessibility verification 
+ Advanced AI tools 
+ Caregiver/family tools 
+ Impact analytics 
+31. Recommended Long-Term Platform 
+Ability Link should evolve from an accessibility discovery app into a B2B2C accessibility infrastructure platform: a 
+trusted accessibility data layer, AI matching engine, Accessibility Passport, provider network, and 
+enterprise/government toolkit that can scale across Europe and internationally. 
+
+===== PAGE 11 =====
+Product differentiation 
+ Personalized accessibility rather than a one-size-fits-all accessibility label 
+ AI that understands individual accessibility requirements 
+ Accessibility Passport that travels with the user 
+ Combination of people, places, services and accessibility data 
+ Community + verified provider data 
+ B2B2C monetization 
+ Accessibility intelligence for organizations 
+ Global, multi-disability architecture 
+Reference note 
+This feature inventory incorporates the Ability Link concepts developed in our previous planning and adds 
+product-level features that are useful for an accelerator-ready, scalable platform. Comparable accessibility 
+products commonly use accessibility maps, structured ratings, barrier reports and personalized accessibility 
+information; Ability Link is intended to combine these with an Accessibility Passport, AI matching and B2B 
+infrastructure. Examples of comparable capabilities can be seen in current accessibility mapping and 
+AI/accessibility products.  
