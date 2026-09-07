@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --al-blue: #0066ff;
+  --al-navy: #0a1d37;
+  --al-ink: #0f1b33;
+  --al-muted: #64748b;
+}
+
+body {
+  background-color: #fff;
+  color: var(--al-ink);
+}
+
+.balance {
+  text-wrap: balance;
+}
+
+@layer utilities {
+  .dot-pattern {
+    background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+}
