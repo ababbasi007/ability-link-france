@@ -1,0 +1,23 @@
+{
+  "app.brand": "Ability Link",
+  "common.search": "Search",
+  "common.refresh": "Refresh",
+  "common.loading": "Loading…",
+  "common.prev": "Previous",
+  "common.next": "Next",
+  "common.rowsPerPage": "Rows per page",
+  "common.page": "Page",
+  "reports.title": "Reports",
+  "reports.subtitle": "Unified moderation queue across places, reviews, community, jobs, and providers.",
+  "reports.source.all": "All",
+  "reports.source.place": "Place",
+  "reports.source.review": "Review",
+  "reports.source.community": "Community",
+  "reports.source.job": "Job",
+  "reports.source.provider": "Provider",
+  "users.title": "Users",
+  "places.title": "Places",
+  "providers.title": "Providers",
+  "settings.language": "Language",
+  "settings.languageHint": "Choose the admin panel display language. Preference is saved on this device."
+}

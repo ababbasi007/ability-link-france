@@ -1,0 +1,23 @@
+{
+  "app.brand": "Ability Link",
+  "common.search": "Rechercher",
+  "common.refresh": "Actualiser",
+  "common.loading": "Chargement…",
+  "common.prev": "Précédent",
+  "common.next": "Suivant",
+  "common.rowsPerPage": "Lignes par page",
+  "common.page": "Page",
+  "reports.title": "Signalements",
+  "reports.subtitle": "File de modération unifiée : lieux, avis, communauté, emplois et prestataires.",
+  "reports.source.all": "Tous",
+  "reports.source.place": "Lieu",
+  "reports.source.review": "Avis",
+  "reports.source.community": "Communauté",
+  "reports.source.job": "Emploi",
+  "reports.source.provider": "Prestataire",
+  "users.title": "Utilisateurs",
+  "places.title": "Lieux",
+  "providers.title": "Prestataires",
+  "settings.language": "Langue",
+  "settings.languageHint": "Choisissez la langue d’affichage du panneau d’administration. La préférence est enregistrée sur cet appareil."
+}
